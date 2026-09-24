@@ -89,4 +89,49 @@ class DateTests {
         assertEquals(3, sut.month)
         assertEquals(3, sut.day)
     }
+
+    @Test fun `Test equality of dates that represent the same date`() {
+        val sut = Date(2025, 3, 2)
+        assertTrue(sut == sut)             //   sut.equals(sut)
+        assertTrue(sut == Date(2025, 3, 2))
+    }
+
+    @Test fun `Tests inequality between dates and dates with another type`() {
+        val sut = Date(2025, 3, 2)
+        assertNotEquals(sut, Date(2025, 4, 1))
+        val any :Any = 2025
+        assertNotEquals(sut, any)  // Compare with Int
+        val dn :Date? = null
+        assertNotEquals(sut, dn)   // Compare with null
+        assertNotEquals(dn, sut)   // Compare null with Date
+    }
+
+    @Test
+    fun `Coherence between equals and hashCode`() {
+        val sut = Date(2025, 3, 2)
+        assertEquals(sut.hashCode(), sut.hashCode())
+
+        val d2 = Date(2025, 3, 2)
+        assertEquals(sut, d2)
+        assertEquals(sut.hashCode(), d2.hashCode()) // Devem ser iguais
+
+        val d3 = Date(2025, 4, 2)
+        assertNotEquals(sut, d3)
+        assertNotEquals(sut.hashCode(), d3.hashCode()) // Devem ser diferentes
+    }
+
+    @Test
+    fun `Compare dates`() {
+        val sut = Date(2025, 3, 2)
+        assertTrue(sut < Date(2025, 3, 4)) // sut.compareTo(Date(...))
+        assertTrue(Date(2025, 4, 2) >= sut)
+        assertTrue(sut <= Date(2050, 3, 2))
+        assertTrue(sut > Date(2025, 3, 1))
+    }
+
+    @Test
+    fun `String representation of a date`() {
+        val sut = Date(2025, 3, 2)
+        assertEquals("2025-03-02", sut.toString())
+    }
 }
