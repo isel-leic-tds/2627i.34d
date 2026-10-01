@@ -1,4 +1,6 @@
-private const val EMPTY = ' '
+package model
+
+const val EMPTY = ' '
 
 data class Game(
     val first: Char = 'X',
@@ -11,7 +13,7 @@ data class Game(
 )
 
 private fun Char.otherPlayer() = if (this == 'X') 'O' else 'X'
-private fun Game.isWinner(p: Char): Boolean =
+fun Game.isWinner(p: Char): Boolean =
 
     // Linha
     (0..6 step 3).any {
