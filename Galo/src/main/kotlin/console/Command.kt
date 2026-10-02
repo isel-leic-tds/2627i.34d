@@ -8,10 +8,10 @@ abstract class Command(val argsSyntax: String = "") {
     open val isToFinish: Boolean = false
 }
 
-// Subclasses: comandos em concreto
+// Subclasses: comandos em concreto. Singleton
 
 // Play
-class Play : Command("<pos>") {
+object Play : Command("<pos>") {
 
     override fun execute(args: List<String>, game: Game?): Game? {
         val arg = requireNotNull(args.firstOrNull()) { "Missing position" }
@@ -21,6 +21,18 @@ class Play : Command("<pos>") {
 }
 
 // New
+object New : Command() {
+    override fun execute(args: List<String>, game: Game?) = game?.new() ?: Game()
+}
 
 // Exit
+object Exit : Command() {
+    override val isToFinish: Boolean = true
+}
 
+// Mapeamento entre os nomes dos comandos e os objetos
+val commands = mapOf(
+    "NEW" to New,
+    "EXIT" to Exit,
+    "PLAY" to Play
+)

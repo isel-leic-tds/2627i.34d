@@ -35,6 +35,5 @@ fun Game.canPlay(pos: Int): Boolean = board[pos] == EMPTY
 fun Game.play(pos: Int) = copy(
     turn = turn.otherPlayer(),
     board = board.mapIndexed {
-        idx, move -> if (idx == pos) turn else move
+            idx, move -> if (idx == pos) turn else move
     })
-
