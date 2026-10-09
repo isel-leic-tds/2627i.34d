@@ -15,7 +15,7 @@ object Play : Command("<pos>") {
 
     override fun execute(args: List<String>, game: Game?): Game? {
         val arg = requireNotNull(args.firstOrNull()) { "Missing position" }
-        val pos = requireNotNull(arg.toIntOrNull()) { "Invalid position" }
+        val pos = requireNotNull(arg.toIntOrNull()?.toPositionOrNull()) { "Invalid position" }
         return checkNotNull(game) { "Game Not started" }.play(pos)
     }
 }

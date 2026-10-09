@@ -1,39 +1,46 @@
 package model
 
-const val EMPTY = ' '
-
 data class Game(
-    val first: Char = 'X',
-    val turn: Char = first,
-    val board: List<Char> = listOf(
-        EMPTY, EMPTY, EMPTY,
-        EMPTY, EMPTY, EMPTY,
-        EMPTY, EMPTY, EMPTY
-    )
+    val first: Player = Player.X,
+    val board: List<Player?> = List(BOARD_CELLS) { null },
+    val state: GameState = Run(first)
 )
 
-private fun Char.otherPlayer() = if (this == 'X') 'O' else 'X'
-fun Game.isWinner(p: Char): Boolean =
+fun Game.isWinner(p: Player): Boolean =
 
     // Linha
-    (0..6 step 3).any {
-        row -> (0..2).all { col -> board[row + col] == p }
+    (0..<BOARD_CELLS step BOARD_SIZE).any {
+        row -> (0..<BOARD_SIZE).all { col -> board[row + col] == p }
     } ||
     // Coluna
-    (0..2).any {
-                col -> (0..6 step 3).all { row -> board[row + col] == p }
+    (0..<BOARD_SIZE).any {
+                col -> (0..<BOARD_CELLS step BOARD_SIZE).all { row -> board[row + col] == p }
         } ||
 
     // Diagona principal
-    (0..8 step 4).all { board[it] == p} ||
+    (0..<BOARD_CELLS step (BOARD_SIZE+1)).all { board[it] == p} ||
 
     // Diagonal secundária
-    (2..6 step 2).all { board[it] == p}
+    (2..<BOARD_CELLS step (BOARD_SIZE-1)).all { board[it] == p}
 
-fun Game.new() = Game(first = first.otherPlayer())
-fun Game.canPlay(pos: Int): Boolean = board[pos] == EMPTY
-fun Game.play(pos: Int) = copy(
-    turn = turn.otherPlayer(),
-    board = board.mapIndexed {
-            idx, move -> if (idx == pos) turn else move
-    })
+fun Game.new() = Game(first = first.other)
+fun Game.canPlay(pos: Position): Boolean = board[pos.index] == null
+fun Game.play(pos: Position): Game = when(state) {
+    is Run -> {
+        check(canPlay(pos)) { "Position $pos is already used" }
+        val newGame = copy(
+            board = board.mapIndexed { idx, move ->
+                if (idx == pos.index) state.turn else move
+            }
+        )
+        return copy(
+            board = newGame.board,
+            state = when {
+                newGame.isWinner(state.turn) -> Win(state.turn)
+                board.all { it != null } -> Draw
+                else -> Run(state.turn.other)
+            }
+            )
+    }
+    is Win, Draw -> error("Game already finished")
+}

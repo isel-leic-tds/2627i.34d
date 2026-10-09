@@ -19,16 +19,12 @@ value class Position private constructor (val index: Int) {
     companion object {
         val values = List(BOARD_CELLS) { Position(it) }
         operator fun invoke(index: Int) = values[index]
-        operator fun invoke(row: Int, col: Int) = values[row * BOARD_SIZE + col]
+        operator fun invoke(row: Int, col: Int): Position {
+            require(row in 0..<BOARD_SIZE && col in 0..<BOARD_SIZE)
+            return values[row * BOARD_SIZE + col]
+        }
     }
 }
 
 
-fun main() {
-
-    val p1 = Position(1)
-    val p2 = Position(1)
-    val p3 = Position.values[3]
-    val p4 = Position(4)
-    val p5 = Position(1, 2)
-}
+fun Int.toPositionOrNull() = Position.values.getOrNull(this)
