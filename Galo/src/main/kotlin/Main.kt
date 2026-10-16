@@ -4,7 +4,7 @@ import console.*
 
 fun main() {
 
-    var game: Game? = null
+    var game = Game()
     while(true) {
         // Ler o comando
         val (name, args) = readCommand()
@@ -16,7 +16,7 @@ fun main() {
             // Executar o comando
             game = cmd.execute(args, game)
             if (cmd.isToFinish) break
-            game?.show()
+            game.show()
         }
         catch (e: IllegalStateException) {
             println(e.message)
