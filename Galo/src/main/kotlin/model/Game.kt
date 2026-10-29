@@ -1,5 +1,7 @@
 package model
 
+import storage.Serializer
+
 data class Game(
     val first: Player = Player.X,
     val board: Board = emptyBoard(),
@@ -46,4 +48,40 @@ fun Game.play(pos: Position): Game = when(state) {
             )
     }
     is Win, Draw -> error("Game already finished")
+}
+
+//X
+//0:X 1:O
+//Run:X
+//X=0 O=0 null=0
+object GameSerializer: Serializer<Game> {
+
+    override fun serialize(data: Game): String = buildString {
+        appendLine(data.first.name)
+        appendLine(data.board.entries.joinToString(" ") {
+                (pos, player) -> "${pos.index}:${player.name}"
+        })
+        appendLine(GameStateSerializer.serialize(data.state))
+        appendLine(data.score.entries.joinToString(" ") {
+                (player, score) -> "${player?.name}=${score}"
+        })
+    }
+
+    override fun deserialize(text: String): Game {
+        val (l1, l2, l3, l4) = text.split('\n')
+        val first = l1.toPlayer()
+        val board = l2.split(' ').map {
+            it.split(':')
+        }.associate {
+                (index, player) -> Position(index.toInt()) to player.toPlayer()
+        }
+        val state = GameStateSerializer.deserialize(l3)
+        val score = l4.split(' ').map {
+            it.split('=')
+        }.associate {
+                (player, score) -> player.toPlayerOrNull() to score.toInt()
+        }
+
+        return Game(first, board, state, score)
+    }
 }

@@ -2,6 +2,6 @@ package storage
 
 interface Serializer<Data> {
 
-    fun serialize(date: Data): String
+    fun serialize(data: Data): String
     fun deserialize(text: String): Data
 }

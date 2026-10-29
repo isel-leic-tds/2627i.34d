@@ -1,43 +1,40 @@
 package console
 
 import model.*
+import storage.TextFileStorage
 
 // Classe base, comando genérico
-abstract class Command(val argsSyntax: String = "") {
-    open fun execute(args: List<String>, game: Game): Game = game
-    open val isToFinish: Boolean = false
-}
-
-// Subclasses: comandos em concreto. Singleton
+class Command(
+    val argsSyntax: String = "",
+    val isToFinish: Boolean = false,
+    val execute: (args: List<String>, game: Game) -> Game = { _, game -> game }
+)
 
 // Play
-object Play : Command("<pos>") {
-
-    override fun execute(args: List<String>, game: Game): Game {
+private val Play = Command("<pos>") { args, game ->
         val arg = requireNotNull(args.firstOrNull()) { "Missing position" }
         val pos = requireNotNull(arg.toIntOrNull()?.toPositionOrNull()) { "Invalid position" }
-        return checkNotNull(game) { "Game Not started" }.play(pos)
+        game.play(pos)
+}
+
+private fun storageCommand(specific: (Game, String) -> Game) =
+    Command() { args, game ->
+        val name = requireNotNull(args.firstOrNull()) { "Missing name" }
+        val isValidName = name.matches(Regex("[a-zA-Z][a-zA-Z0-9_]*"))
+        require(isValidName) { "Invalid name $name" }
+        specific(game, name)
     }
-}
-
-// New
-object New : Command() {
-    override fun execute(args: List<String>, game: Game) = game.new()
-}
-
-// Exit
-object Exit : Command() {
-    override val isToFinish: Boolean = true
-}
-
-object Score : Command() {
-    override fun execute(args: List<String>, game: Game) = game.apply { showScore() }
-}
 
 // Mapeamento entre os nomes dos comandos e os objetos
-val commands = mapOf(
-    "NEW" to New,
-    "EXIT" to Exit,
+fun getCommands(st: GameStorage) = mapOf(
+    "NEW" to Command() { _, game -> game.new() },
+    "EXIT" to Command(isToFinish=true),
     "PLAY" to Play,
-    "SCORE" to Score,
+    "SCORE" to Command() { _, game -> game.apply { showScore() } },
+    "LOAD" to storageCommand { game, name ->
+        checkNotNull(st.read(name)) { "Game $name not found" }
+    },
+    "SAVE" to storageCommand { game, name ->
+        game.also {st.create(name, game)}
+    }
 )

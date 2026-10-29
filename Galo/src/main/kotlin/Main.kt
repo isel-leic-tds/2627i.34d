@@ -1,10 +1,12 @@
 import console.readCommand
 import model.*
 import console.*
+import storage.TextFileStorage
 
 fun main() {
 
     var game = Game()
+    val commands = getCommands(TextFileStorage("savedGames", GameSerializer))
     while(true) {
         // Ler o comando
         val (name, args) = readCommand()
