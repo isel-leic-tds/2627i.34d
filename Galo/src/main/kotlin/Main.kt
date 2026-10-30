@@ -2,11 +2,14 @@ import console.readCommand
 import model.*
 import console.*
 import storage.TextFileStorage
+import storage.mongo.MongoDriver
+import storage.mongo.MongoStorage
 
 fun main() {
 
+    MongoDriver(nameDb = "Galo").use { md ->
     var game = Game()
-    val commands = getCommands(TextFileStorage("savedGames", GameSerializer))
+    val commands = getCommands(MongoStorage("savedGames", md, GameSerializer))
     while(true) {
         // Ler o comando
         val (name, args) = readCommand()
@@ -28,4 +31,5 @@ fun main() {
             println("Use: $name ${cmd.argsSyntax}")
         }
     }
+        }
 }
