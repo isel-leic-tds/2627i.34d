@@ -28,3 +28,14 @@ fun Game.showScore() {
     }
     println(scoreText)
 }
+
+fun Match.show() {
+
+    if (this is MatchRun) {
+        println("Match: $id, Player: $localPlayer")
+        game.show()
+    }
+    else {
+        println("Match has not been started yet")
+    }
+}

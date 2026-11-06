@@ -8,8 +8,8 @@ import storage.mongo.MongoStorage
 fun main() {
 
     MongoDriver(nameDb = "Galo").use { md ->
-    var game = Game()
-    val commands = getCommands(MongoStorage("savedGames", md, GameSerializer))
+    var match = Match(MongoStorage("savedGames", md, GameSerializer))
+    val commands = getCommands()
     while(true) {
         // Ler o comando
         val (name, args) = readCommand()
@@ -19,9 +19,9 @@ fun main() {
         else try {
 
             // Executar o comando
-            game = cmd.execute(args, game)
+            match = cmd.execute(args, match)
             if (cmd.isToFinish) break
-            game.show()
+            match.show()
         }
         catch (e: IllegalStateException) {
             println(e.message)

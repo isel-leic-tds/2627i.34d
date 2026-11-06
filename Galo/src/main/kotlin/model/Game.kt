@@ -70,7 +70,7 @@ object GameSerializer: Serializer<Game> {
     override fun deserialize(text: String): Game {
         val (l1, l2, l3, l4) = text.split('\n')
         val first = l1.toPlayer()
-        val board = l2.split(' ').map {
+        val board = if (l2.isBlank()) emptyBoard() else l2.split(' ').map {
             it.split(':')
         }.associate {
                 (index, player) -> Position(index.toInt()) to player.toPlayer()

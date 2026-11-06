@@ -2,4 +2,4 @@ package model
 
 import storage.*
 
-typealias GameStorage = Storage<String, Game>
+typealias GameStorage = Storage<Name, Game>

@@ -7,34 +7,30 @@ import storage.TextFileStorage
 class Command(
     val argsSyntax: String = "",
     val isToFinish: Boolean = false,
-    val execute: (args: List<String>, game: Game) -> Game = { _, game -> game }
+    val execute: (args: List<String>, match: Match) -> Match = { _, match -> match }
 )
 
 // Play
-private val Play = Command("<pos>") { args, game ->
+private val Play = Command("<pos>") { args, match ->
         val arg = requireNotNull(args.firstOrNull()) { "Missing position" }
         val pos = requireNotNull(arg.toIntOrNull()?.toPositionOrNull()) { "Invalid position" }
-        game.play(pos)
+        match.play(pos)
 }
 
-private fun storageCommand(specific: (Game, String) -> Game) =
-    Command() { args, game ->
-        val name = requireNotNull(args.firstOrNull()) { "Missing name" }
-        val isValidName = name.matches(Regex("[a-zA-Z][a-zA-Z0-9_]*"))
-        require(isValidName) { "Invalid name $name" }
-        specific(game, name)
-    }
 
 // Mapeamento entre os nomes dos comandos e os objetos
-fun getCommands(st: GameStorage) = mapOf(
-    "NEW" to Command() { _, game -> game.new() },
+fun getCommands() = mapOf(
+    "NEW" to Command() { _, match -> match.new() },
     "EXIT" to Command(isToFinish=true),
     "PLAY" to Play,
-    "SCORE" to Command() { _, game -> game.apply { showScore() } },
-    "LOAD" to storageCommand { game, name ->
-        checkNotNull(st.read(name)) { "Game $name not found" }
+    "SCORE" to Command() { _, match -> match.apply { showScore() } },
+    "START" to Command("<name>") { args, match ->
+        val arg = requireNotNull(args.firstOrNull()) { "Missing position" }
+        match.start(Name(arg))
     },
-    "SAVE" to storageCommand { game, name ->
-        game.also {st.create(name, game)}
-    }
+    "JOIN" to Command("<name>") { args, match ->
+        val arg = requireNotNull(args.firstOrNull()) { "Missing position" }
+        match.join(Name(arg))
+    },
+    "REFRESH" to Command() { _, match -> match.refresh() },
 )
