@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,134 +30,53 @@ import galokmp.desktopapp.generated.resources.*
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun Cell(modifier: Modifier, player: Player?, onClick: () -> Unit = {}) {
-
-    if (player == null) Box(modifier.clickable(onClick = onClick))
-    else {
-        val resource = when(player) {
-            Player.X -> Res.drawable.X
-            Player.O -> Res.drawable.O
-        }
-        Image(
-            painterResource(resource),
-            contentDescription = null,
-            modifier
-        )
-    }
-}
-
-val CELL_SIDE = 100
-val CELL_PADDING = 5
-val BOARD_SIDE = BOARD_SIZE * CELL_SIDE + CELL_PADDING * (BOARD_SIZE - 1)
-
-@Composable
-fun BoardView(board: Board, onClick: (Position) -> Unit) {
-
-    Column(
-        modifier = Modifier.background(Color.Black).size(BOARD_SIDE.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        repeat(BOARD_SIZE) { row ->
-
-            Row (
-                modifier = Modifier.fillMaxWidth().height(CELL_SIDE.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ){
-                repeat(BOARD_SIZE) { col ->
-
-                    val pos = Position(row, col)
-                    Cell(Modifier.background(Color.White).size(CELL_SIDE.dp),
-                        board[pos],
-                        {onClick(pos)})
-                }
-            }
-        }
-    }
-}
-
-val STATUS_HEIGHT = 70.dp
-
-@Composable
-fun StatusBar(state: GameState) {
-
-    Row (
-        modifier = Modifier.background(Color.White).width(BOARD_SIDE.dp).height(STATUS_HEIGHT),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ){
-        val (text, player) = when (state) {
-            is Run -> "Turn:" to state.turn
-            is Win -> "Winner:" to state.winner
-            Draw -> "Draw" to null
-        }
-        LabeledCell(text, player)
-    }
-}
-
-@Composable
-fun LabeledCell(label: String, player: Player?) {
-    Text(label, style = MaterialTheme.typography.h3)
-    Cell(Modifier.padding(5.dp), player)
-}
-
-@Composable
-fun ScoreDialog(score: Score, onClose: ()->Unit) = AlertDialog(
-    onDismissRequest = onClose,
-    title = { Text("Score") },
-    confirmButton = { TextButton(onClick = onClose) { Text("Close") } },
-    modifier = Modifier.fillMaxWidth(0.8f),
-    text = {
-        Column {
-            val modifier = Modifier.padding(5.dp)
-            Player.entries.forEach { player ->
-                Row (modifier) {
-                    Cell(Modifier.size(20.dp), player)
-                    Text(" - ${score[player]}")
-                }
-            }
-            Row (modifier) {
-                Text("Draws - ${score[null]}")
-            }
-        }
-    },
-)
-
-class AppViewModel {
-
-    //////////
-    // Game Management
-    var game by mutableStateOf(Game())
-        private set
-    fun play(pos: Position) {
-        if (game.state is Run) game = game.play(pos)
-    }
-    fun newBoard() { game = game.new() }
-
-    //////////
-    // ScoreDialog Management
-    var scoreDialogVisible by mutableStateOf(false)
-        private set
-    fun showScoreDialog() { scoreDialogVisible = true }
-    fun hideScoreDialog() { scoreDialogVisible = false }
-}
-@Composable
 private fun FrameWindowScope.App(onExit: () -> Unit) {
-    val viewModel = remember { AppViewModel() }
+    val viewModel = remember {
+        AppViewModelMongo().also { vm ->    /* AppViewModelTextFile() */
+            vm.addDialog("start").apply {
+                this.dialog = {
+                    MatchNameDialog(
+                        "Start",
+                        { this.hideDialog() },
+                        { name -> vm.start(name) })
+
+                }
+            }
+            vm.addDialog("join").apply {
+                this.dialog = {
+                    MatchNameDialog(
+                        "Join",
+                        { this.hideDialog() },
+                        { name -> vm.join(name) })
+                }
+            }
+            vm.addDialog("score").apply {
+                this.dialog = {
+                    ScoreDialog(vm.matchRun.game.score, { this.hideDialog() })
+                }
+            }
+        }
+        }
+
 
     MenuBar {
         Menu("Game") {
-            Item("New Game") { viewModel.newBoard() }
-            Item("Score") { viewModel.showScoreDialog() }
-            Item("Exit", onClick = onExit)
+            Item("Start") { viewModel.getDialog("start").showDialog() }
+            Item("Join") { viewModel.getDialog("join").showDialog() }
+            Item("New Board") { viewModel.newBoard() }
+            Item("Score") { viewModel.getDialog("score").showDialog() }
+            Item("Exit", onClick = { viewModel.exit() ; onExit() })
         }
     }
     MaterialTheme {
         Column {
-            BoardView(viewModel.game.board, viewModel::play)
-            StatusBar(viewModel.game.state)
+            BoardView(viewModel.matchRun.game.board, viewModel::play)
+            StatusBar(viewModel.matchRun.game.state)
         }
-        if (viewModel.scoreDialogVisible)
-            ScoreDialog(viewModel.game.score, { viewModel.hideScoreDialog() })
+
+        for ((name, d) in viewModel.dialogs) {
+            if (d.dialogVisible) d.dialog()
+        }
     }
 
 }
@@ -164,11 +84,11 @@ private fun FrameWindowScope.App(onExit: () -> Unit) {
 
 fun main() = application {
     Window(
-        onCloseRequest = ::exitApplication,
+        onCloseRequest = {},
         title = "Jogo do Galo",
         icon = painterResource(Res.drawable.X),
         state = WindowState(size = DpSize.Unspecified),
-        resizable = false
+        //resizable = false
     ) {
         App(::exitApplication)
     }
