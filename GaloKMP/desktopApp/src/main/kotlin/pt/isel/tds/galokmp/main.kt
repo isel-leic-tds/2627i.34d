@@ -27,6 +27,9 @@ import androidx.compose.ui.window.MenuBar
 
 import pt.isel.tds.galokmp.model.*
 import galokmp.desktopapp.generated.resources.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -38,8 +41,7 @@ private fun FrameWindowScope.App(onExit: () -> Unit) {
                     MatchNameDialog(
                         "Start",
                         { this.hideDialog() },
-                        { name -> vm.start(name) })
-
+                        { name -> this.hideDialog() ; vm.start(name) })
                 }
             }
             vm.addDialog("join").apply {
@@ -47,22 +49,27 @@ private fun FrameWindowScope.App(onExit: () -> Unit) {
                     MatchNameDialog(
                         "Join",
                         { this.hideDialog() },
-                        { name -> vm.join(name) })
+                        { name -> this.hideDialog() ; vm.join(name) })
                 }
             }
             vm.addDialog("score").apply {
                 this.dialog = {
-                    ScoreDialog(vm.matchRun.game.score, { this.hideDialog() })
+                    ScoreDialog(vm.matchRun.game.score, vm.matchRun.id, { this.hideDialog() })
+                }
+            }
+            vm.addDialog("error").apply {
+                this.dialog = {
+                    ErrorDialog(vm.errorMessage, { this.hideDialog() })
                 }
             }
         }
-        }
-
+    }
 
     MenuBar {
         Menu("Game") {
             Item("Start") { viewModel.getDialog("start").showDialog() }
             Item("Join") { viewModel.getDialog("join").showDialog() }
+            Item("Refresh") { viewModel.refresh() }
             Item("New Board") { viewModel.newBoard() }
             Item("Score") { viewModel.getDialog("score").showDialog() }
             Item("Exit", onClick = { viewModel.exit() ; onExit() })
@@ -70,17 +77,19 @@ private fun FrameWindowScope.App(onExit: () -> Unit) {
     }
     MaterialTheme {
         Column {
-            BoardView(viewModel.matchRun.game.board, viewModel::play)
-            StatusBar(viewModel.matchRun.game.state)
+            if (viewModel.isMatchRunning) {
+                BoardView(viewModel.matchRun.game.board, viewModel::play)
+                StatusBar(viewModel.matchRun.game.state, viewModel.matchRun.localPlayer)
+            }
+            else
+                Box(Modifier.size(BOARD_SIDE.dp, BOARD_SIDE.dp + STATUS_HEIGHT))
         }
 
-        for ((name, d) in viewModel.dialogs) {
+        for ((_, d) in viewModel.dialogs) {
             if (d.dialogVisible) d.dialog()
         }
     }
-
 }
-
 
 fun main() = application {
     Window(

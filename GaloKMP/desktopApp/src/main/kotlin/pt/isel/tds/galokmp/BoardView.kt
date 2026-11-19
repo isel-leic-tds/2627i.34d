@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -83,13 +84,15 @@ fun BoardView(board: Board, onClick: (Position) -> Unit) {
 val STATUS_HEIGHT = 70.dp
 
 @Composable
-fun StatusBar(state: GameState) {
+fun StatusBar(state: GameState, localPlayer: Player) {
 
     Row (
         modifier = Modifier.background(Color.White).width(BOARD_SIDE.dp).height(STATUS_HEIGHT),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ){
+        LabeledCell("You:", localPlayer)
+        Spacer(Modifier.width(30.dp))
         val (text, player) = when (state) {
             is Run -> "Turn:" to state.turn
             is Win -> "Winner:" to state.winner
@@ -101,6 +104,6 @@ fun StatusBar(state: GameState) {
 
 @Composable
 fun LabeledCell(label: String, player: Player?) {
-    Text(label, style = MaterialTheme.typography.h3)
+    Text(label, style = MaterialTheme.typography.h5)
     Cell(Modifier.padding(5.dp), player)
 }

@@ -16,20 +16,26 @@ import pt.isel.tds.galokmp.model.play
 import pt.isel.tds.galokmp.storage.TextFileStorage
 import pt.isel.tds.galokmp.storage.mongo.MongoDriver
 import pt.isel.tds.galokmp.storage.mongo.MongoStorage
+import kotlin.time.Duration.Companion.seconds
 
 
 open class AppViewModel(val st: GameStorage) {
 
     //////////
-    // Game Management
+    // Match Management
     var match by mutableStateOf(Match(st))
         private set
     val matchRun get() = (match as MatchRun)
     val isMatchRunning get() = (match is MatchRun)
-    fun play(pos: Position) {
-        if (isMatchRunning && matchRun.game.state is Run) match = match.play(pos)
+    fun play(pos: Position) = execOrError {
+        if (isMatchRunning && matchRun.game.state is Run) {
+            match = match.play(pos)
+        }
     }
-    fun newBoard() { match = match.new() }
+    fun newBoard() = execOrError { match = match.new() }
+    fun start(name: Name) = execOrError { match = match.start(name) }
+    fun join(name: Name) = execOrError { match = match.join(name) }
+    fun refresh() = execOrError { match = match.refresh() }
     open fun exit() {
         match.deleteIfIsOwner()
     }
@@ -52,12 +58,20 @@ open class AppViewModel(val st: GameStorage) {
 
     fun getDialog(name: String) = dialogs[name] ?: error("Dialog with name $name not found")
 
-    fun start(name: Name) {
-        match = match.start(name)
+    //////////
+    // Error Management
+    var errorMessage = ""
+    fun showError(message: String) {
+        errorMessage = message
+        dialogs["error"]?.showDialog()  // Only called if user defined an "error" dialog.
     }
-
-    fun join(name: Name) {
-        match = match.join(name)
+    fun execOrError(action: () -> Unit) {
+        try {
+            action()
+        }
+        catch (e: Exception) {
+            showError(e.message ?: "Unknown error")
+        }
     }
 }
 

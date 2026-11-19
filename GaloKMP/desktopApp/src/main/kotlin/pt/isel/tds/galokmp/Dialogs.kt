@@ -23,13 +23,14 @@ import pt.isel.tds.galokmp.model.Score
 
 
 @Composable
-fun ScoreDialog(score: Score, onClose: ()->Unit) = AlertDialog(
+fun ScoreDialog(score: Score, matchId: Name, onClose: ()->Unit) = AlertDialog(
     onDismissRequest = onClose,
     title = { Text("Score") },
     confirmButton = { TextButton(onClick = onClose) { Text("Close") } },
     modifier = Modifier.fillMaxWidth(0.8f),
     text = {
         Column {
+            Text("Match ID - $matchId", Modifier.padding(vertical = 10.dp))
             val modifier = Modifier.padding(5.dp)
             Player.entries.forEach { player ->
                 Row (modifier) {
@@ -66,3 +67,14 @@ fun MatchNameDialog(purpose: String, onCancel: ()->Unit, onConfirm: (Name)->Unit
         }
     )
 }
+
+@Composable
+fun ErrorDialog(message: String, onClose: ()->Unit) =
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("Error")},
+        text = {
+            Text(message, style = MaterialTheme.typography.h6)
+        },
+        confirmButton = {TextButton(onClick = onClose) { Text("Close") } },
+    )
