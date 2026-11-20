@@ -2,10 +2,12 @@ package pt.isel.tds.galokmp
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.AlertDialog
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
@@ -78,3 +80,9 @@ fun ErrorDialog(message: String, onClose: ()->Unit) =
         },
         confirmButton = {TextButton(onClick = onClose) { Text("Close") } },
     )
+
+@Composable
+fun WaitingIndicatorDialog() = CircularProgressIndicator(
+    Modifier.fillMaxSize().padding(5.dp),
+    strokeWidth = 15.dp
+)

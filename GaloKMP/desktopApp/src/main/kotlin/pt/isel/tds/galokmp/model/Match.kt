@@ -1,5 +1,7 @@
 package pt.isel.tds.galokmp.model
 
+class NoChangesException : IllegalStateException("No changes")
+class GameDeletedException : IllegalStateException("Game was deleted")
 
 open class Match(val gs: GameStorage) {
 
@@ -46,8 +48,9 @@ open class Match(val gs: GameStorage) {
 */
     fun refresh() = ensureMatchRun {
         gs.read(id)?.also {
-            check(it != game) { "No changes" }
-        } ?: error("Game not found in the storage")
+            //check(it != game) { "No changes" }
+            if (it == game) throw NoChangesException()
+        } ?: throw GameDeletedException()
     }
 
 

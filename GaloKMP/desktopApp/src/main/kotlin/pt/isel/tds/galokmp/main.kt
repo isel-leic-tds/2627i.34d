@@ -34,8 +34,9 @@ import org.jetbrains.compose.resources.painterResource
 
 @Composable
 private fun FrameWindowScope.App(onExit: () -> Unit) {
+    val cs = rememberCoroutineScope()
     val viewModel = remember {
-        AppViewModelMongo().also { vm ->    /* AppViewModelTextFile() */
+        AppViewModelMongo(cs = cs).also { vm ->    /* AppViewModelTextFile() */
             vm.addDialog("start").apply {
                 this.dialog = {
                     MatchNameDialog(
@@ -57,9 +58,14 @@ private fun FrameWindowScope.App(onExit: () -> Unit) {
                     ScoreDialog(vm.matchRun.game.score, vm.matchRun.id, { this.hideDialog() })
                 }
             }
-            vm.addDialog("error").apply {
+            vm.addDialog(AppViewModel.ERROR_DIALOG_ID).apply {
                 this.dialog = {
                     ErrorDialog(vm.errorMessage, { this.hideDialog() })
+                }
+            }
+            vm.addDialog(AppViewModel.WAITING_DIALOG_ID).apply {
+                this.dialog = {
+                    WaitingIndicatorDialog()
                 }
             }
         }
@@ -69,7 +75,6 @@ private fun FrameWindowScope.App(onExit: () -> Unit) {
         Menu("Game") {
             Item("Start") { viewModel.getDialog("start").showDialog() }
             Item("Join") { viewModel.getDialog("join").showDialog() }
-            Item("Refresh") { viewModel.refresh() }
             Item("New Board") { viewModel.newBoard() }
             Item("Score") { viewModel.getDialog("score").showDialog() }
             Item("Exit", onClick = { viewModel.exit() ; onExit() })

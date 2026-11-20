@@ -4,6 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import pt.isel.tds.galokmp.model.Game
 import pt.isel.tds.galokmp.model.GameSerializer
 import pt.isel.tds.galokmp.model.GameStorage
@@ -19,7 +25,7 @@ import pt.isel.tds.galokmp.storage.mongo.MongoStorage
 import kotlin.time.Duration.Companion.seconds
 
 
-open class AppViewModel(val st: GameStorage) {
+open class AppViewModel(val st: GameStorage, val cs: CoroutineScope) {
 
     //////////
     // Match Management
@@ -30,13 +36,51 @@ open class AppViewModel(val st: GameStorage) {
     fun play(pos: Position) = execOrError {
         if (isMatchRunning && matchRun.game.state is Run) {
             match = match.play(pos)
+            asyncRefresh()
         }
     }
     fun newBoard() = execOrError { match = match.new() }
-    fun start(name: Name) = execOrError { match = match.start(name) }
-    fun join(name: Name) = execOrError { match = match.join(name) }
-    fun refresh() = execOrError { match = match.refresh() }
+    fun start(name: Name) = execOrError {
+        cancelAsyncRefresh()
+        match = match.start(name)
+    }
+    fun join(name: Name) = execOrError {
+        cancelAsyncRefresh()
+        match = match.join(name)
+        asyncRefresh()
+    }
+
+    private var refreshJob: Job? = null
+    private fun asyncRefresh() {
+        dialogs[WAITING_DIALOG_ID]?.showDialog()
+        refreshJob = cs.launch {
+            while(!matchRun.canNew) {
+                try {
+                    withContext(Dispatchers.IO) {
+                        match = match.refresh()
+                    }
+                    break
+                }
+                catch(e: NoChangesException) {/* Ignore */}
+                catch (e: Exception) {
+                    showError(e.message ?: "Unknown error")
+                    if (e is GameDeletedException) match = Match(match.gs)
+                    break
+                }
+
+                delay(1.seconds)
+            }
+            refreshJob = null
+            dialogs[WAITING_DIALOG_ID]?.hideDialog()
+        }
+    }
+    private fun cancelAsyncRefresh() {
+        refreshJob?.cancel()
+        refreshJob = null
+        dialogs[WAITING_DIALOG_ID]?.hideDialog()
+    }
     open fun exit() {
+        cancelAsyncRefresh()
         match.deleteIfIsOwner()
     }
     //////////
@@ -63,7 +107,7 @@ open class AppViewModel(val st: GameStorage) {
     var errorMessage = ""
     fun showError(message: String) {
         errorMessage = message
-        dialogs["error"]?.showDialog()  // Only called if user defined an "error" dialog.
+        dialogs[ERROR_DIALOG_ID]?.showDialog()  // Only called if user defined an "error" dialog.
     }
     fun execOrError(action: () -> Unit) {
         try {
@@ -73,18 +117,26 @@ open class AppViewModel(val st: GameStorage) {
             showError(e.message ?: "Unknown error")
         }
     }
+
+    companion object {
+        val WAITING_DIALOG_ID = "waiting"
+        val ERROR_DIALOG_ID = "error"
+    }
 }
 
 const val STORAGE_BASE_NAME = "savedGames"
 
-class AppViewModelTextFile : AppViewModel(
-    TextFileStorage(STORAGE_BASE_NAME, GameSerializer)
+class AppViewModelTextFile(cs: CoroutineScope) : AppViewModel(
+    TextFileStorage(STORAGE_BASE_NAME, GameSerializer),
+    cs
 )
 
 class AppViewModelMongo(
-    val driver: MongoDriver = MongoDriver("Galo")
+    val driver: MongoDriver = MongoDriver("Galo"),
+    cs: CoroutineScope
 ) : AppViewModel(
-    MongoStorage(STORAGE_BASE_NAME, driver, GameSerializer)
+    MongoStorage(STORAGE_BASE_NAME, driver, GameSerializer),
+    cs
 ) {
     override fun exit() {
         super.exit()
